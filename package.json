@@ -1,23 +1,25 @@
 {
-  "name": "node-react-webrtc",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "^12.1.4",
-    "@testing-library/user-event": "^13.5.0",
-    "@types/jest": "^27.4.1",
-    "@types/node": "^16.11.26",
-    "@types/react": "^17.0.43",
-    "@types/react-dom": "^17.0.14",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-scripts": "5.0.0",
-    "typescript": "^4.6.3",
-    "web-vitals": "^2.1.4"
+  "name": "webrtc-react",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./lib-esm/index.js",
+  "bin": {
+    "webrtc-react": "./lib-esm/index.js"
   },
+  "author": "Rense Bakker",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brense/webrtc-react.git"
+  },
+  "bugs": {
+    "url": "https://github.com/brense/webrtc-react/issues"
+  },
+  "homepage": "https://github.com/brense/webrtc-react#readme",
   "scripts": {
+    "prepublishOnly": "rimraf ./lib-esm && tsc --p tsconfig.npm.json",
     "start": "react-scripts start",
+    "start:server": "ts-node-dev --project ./tsconfig.server.json ./src/signalingServer.ts",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -39,5 +41,24 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "peerDependencies": {
+    "react": "^16.8.0",
+    "react-dom": "^16.8.0",
+    "express": "^4.17.3",
+    "socket.io": "^4.4.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/user-event": "^14.0.4",
+    "@types/jest": "^27.4.1",
+    "@types/node": "^17.0.23",
+    "@types/react": "^17.0.43",
+    "@types/react-dom": "^17.0.14",
+    "react-scripts": "^5.0.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.6.3",
+    "web-vitals": "^2.1.4"
   }
 }
