@@ -1,5 +1,3 @@
-import { FetchResult, Observable } from '@apollo/client'
-
 type PeersList = {
   [key: string]: RTCPeerConnection
 }
@@ -8,13 +6,31 @@ type ChannelsList = {
   [key: string]: RTCDataChannel
 }
 
+type Observable<T extends unknown> = {
+  subscribe: (subscriber: (payload: T) => void) => void
+}
+
+type SignalPayload = {
+  from: string
+}
+
+type OfferPayload = {
+  from: string
+  sdp: RTCSessionDescriptionInit
+}
+
+type CandidatePayload = {
+  from: string
+  candidate: RTCIceCandidateInit
+}
+
 type PeerConfig = {
   getLocaLPeerId: () => string | Promise<string>
   onConnect: () => {
-    onSignal: Observable<FetchResult<any, Record<string, any>, Record<string, any>>>,
-    onOffer: Observable<FetchResult<any, Record<string, any>, Record<string, any>>>,
-    onAnswer: Observable<FetchResult<any, Record<string, any>, Record<string, any>>>,
-    onCandidate: Observable<FetchResult<any, Record<string, any>, Record<string, any>>>
+    onSignal: Observable<SignalPayload>,
+    onOffer: Observable<OfferPayload>,
+    onAnswer: Observable<OfferPayload>,
+    onCandidate: Observable<CandidatePayload>
   }
   sendOffer: (payload: {
     sdp: RTCSessionDescription | null,
@@ -42,35 +58,28 @@ export default class Peer {
   private _config: PeerConfig
   private _peers: PeersList = {}
   private _channels: ChannelsList = {}
-  private _localPeerId: string
+  private _localPeerId: string | undefined = undefined
 
   constructor(config: PeerConfig) {
     this._config = config
   }
 
   public sendMessage(message: string, to?: string) {
-    if (to) {
-      this._channels[to].send(message)
-    } else {
-      Object.keys(this._channels).forEach(k => {
-        if (this._channels[k].readyState === 'open') {
-          this._channels[k].send(message)
-        }
-      })
-    }
+    const peers = to ? [to] : Object.keys(this._channels)
+    peers.forEach(peer => this._channels[peer].send(message))
   }
 
   public async connect() {
     const { getLocaLPeerId, onConnect } = this._config
     this._localPeerId = await getLocaLPeerId()
     const { onSignal, onOffer, onAnswer, onCandidate } = onConnect()
-    onSignal.subscribe(response => this.createOffer(response.data.newSignal))
-    onOffer.subscribe(response => this.receiveOffer(response.data.newOffer))
-    onAnswer.subscribe(response => this.receiveAnswer(response.data.newAnswer))
-    onCandidate.subscribe(response => this.receiveCandidate(response.data.newCandidate))
+    onSignal.subscribe(payload => this.createOffer(payload))
+    onOffer.subscribe(payload => this.receiveOffer(payload))
+    onAnswer.subscribe(payload => this.receiveAnswer(payload))
+    onCandidate.subscribe(payload => this.receiveCandidate(payload))
   }
 
-  private async createOffer(data: { from: string }) {
+  private async createOffer(data: SignalPayload) {
     const remotePeerId = data.from
     const conn = this.getPeerConnection(remotePeerId)
     const channel = conn.createDataChannel(remotePeerId)
@@ -80,12 +89,12 @@ export default class Peer {
     await conn.setLocalDescription(offer)
     this._config.sendOffer({
       sdp: conn.localDescription,
-      from: this._localPeerId,
+      from: this._localPeerId as string,
       to: remotePeerId
     })
   }
 
-  private async receiveOffer(data: { from: string, sdp: RTCSessionDescriptionInit }) {
+  private async receiveOffer(data: OfferPayload) {
     let remotePeerId = data.from
     let conn = this.getPeerConnection(remotePeerId)
     await conn.setRemoteDescription(new RTCSessionDescription(data.sdp))
@@ -93,18 +102,18 @@ export default class Peer {
     await conn.setLocalDescription(answer)
     this._config.sendAnswer({
       sdp: conn.localDescription,
-      from: this._localPeerId,
+      from: this._localPeerId as string,
       to: remotePeerId
     })
   }
 
-  private receiveAnswer(data: { from: string, sdp: RTCSessionDescriptionInit }) {
+  private receiveAnswer(data: OfferPayload) {
     let remotePeerId = data.from
     let conn = this.getPeerConnection(remotePeerId)
     conn.setRemoteDescription(new RTCSessionDescription(data.sdp))
   }
 
-  private receiveCandidate(data: { from: string, candidate: RTCIceCandidateInit }) {
+  private receiveCandidate(data: CandidatePayload) {
     let remotePeerId = data.from
     let conn = this.getPeerConnection(remotePeerId)
     if (conn.remoteDescription !== null && data.candidate !== null) {
@@ -140,7 +149,7 @@ export default class Peer {
       if (!conn || !event || !event.candidate) return
       this._config.sendCandidate({
         candidate: event.candidate,
-        from: this._localPeerId,
+        from: this._localPeerId as string,
         to: remotePeerId
       })
     }
