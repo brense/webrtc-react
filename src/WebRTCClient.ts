@@ -14,12 +14,26 @@ type IceCandidate = {
   to: string
 }
 
+type SignalPayload = {
+  from: string
+}
+
+type OfferPayload = {
+  from: string
+  sdp: RTCSessionDescriptionInit
+}
+
+type CandidatePayload = {
+  from: string
+  candidate: RTCIceCandidateInit
+}
+
 type ClientConfig = {
   onConnect: () => {
-    onSignal: { subscribe: (observer: (response: { data: { newSignal: { from: string } } }) => void) => void },
-    onOffer: { subscribe: (observer: (response: { data: { newOffer: { from: string; sdp: RTCSessionDescriptionInit } } }) => void) => void },
-    onAnswer: { subscribe: (observer: (response: { data: { newAnswer: { from: string; sdp: RTCSessionDescriptionInit } } }) => void) => void },
-    onCandidate: { subscribe: (observer: (response: { data: { newCandidate: { from: string; candidate: RTCIceCandidateInit } } }) => void) => void }
+    onSignal: { subscribe: (observer: (payload: SignalPayload) => void) => void },
+    onOffer: { subscribe: (observer: (payload: OfferPayload) => void) => void },
+    onAnswer: { subscribe: (observer: (payload: OfferPayload) => void) => void },
+    onCandidate: { subscribe: (observer: (payload: CandidatePayload) => void) => void }
   }
   sendOffer: (payload: SessionDescription) => void
   sendAnswer: (payload: SessionDescription) => void
@@ -39,22 +53,15 @@ function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect, onPeerC
   const connect = async (getLocalPeerId: () => string | Promise<string>) => {
     localPeerId = await getLocalPeerId()
     const { onSignal, onOffer, onAnswer, onCandidate } = onConnect()
-    onSignal.subscribe(response => createOffer(response.data.newSignal))
-    onOffer.subscribe(response => receiveOffer(response.data.newOffer))
-    onAnswer.subscribe(response => receiveAnswer(response.data.newAnswer))
-    onCandidate.subscribe(response => receiveCandidate(response.data.newCandidate))
+    onSignal.subscribe(createOffer)
+    onOffer.subscribe(receiveOffer)
+    onAnswer.subscribe(receiveAnswer)
+    onCandidate.subscribe(receiveCandidate)
   }
 
   const sendMessage = (message: string, to?: string) => {
-    if (to) {
-      channels[to].send(message)
-    } else {
-      Object.keys(channels).forEach(k => {
-        if (channels[k].readyState === 'open') {
-          channels[k].send(message)
-        }
-      })
-    }
+    const peers = to ? [to] : Object.keys(channels)
+    peers.forEach(peer => channels[peer].readyState === 'open' && channels[peer].send(message))
   }
 
   async function createOffer({ from }: { from: string }) {
@@ -148,6 +155,6 @@ function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect, onPeerC
   return { connect, sendMessage }
 }
 
-export default createClient
-
 export type WebRTCClient = ReturnType<typeof createClient>
+
+export default createClient
