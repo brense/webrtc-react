@@ -1,6 +1,6 @@
 {
   "name": "webrtc-react",
-  "version": "0.0.3",
+  "version": "0.0.2",
   "description": "",
   "main": "./lib-esm/index.js",
   "bin": {
@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/brense/webrtc-react#readme",
   "scripts": {
+    "prepublishOnly": "rimraf ./lib-esm && tsc --p tsconfig.npm.json",
     "start": "react-scripts start",
     "start:server": "ts-node-dev --project ./tsconfig.server.json ./src/signalingServer.ts",
     "build": "react-scripts build",
