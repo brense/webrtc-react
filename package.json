@@ -3,8 +3,9 @@
   "version": "0.0.2",
   "description": "",
   "main": "./lib-esm/index.js",
+  "types": "./lib-esm/index.d.ts",
   "bin": {
-    "webrtc-react": "./lib-esm/index.js"
+    "webrtc-react": "./lib-esm/signalingServer.js"
   },
   "author": "Rense Bakker",
   "license": "ISC",
@@ -17,7 +18,7 @@
   },
   "homepage": "https://github.com/brense/webrtc-react#readme",
   "scripts": {
-    "prepublishOnly": "rimraf ./lib-esm && tsc --p tsconfig.npm.json",
+    "prepublishOnly": "tsc --p tsconfig.npm.json",
     "start": "react-scripts start",
     "start:server": "ts-node-dev --project ./tsconfig.server.json ./src/signalingServer.ts",
     "build": "react-scripts build",

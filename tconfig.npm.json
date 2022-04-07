@@ -14,7 +14,7 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src/index.ts"
+    "src/signalingServer.ts"
   ],
   "exclude": [
     "node_modules"
