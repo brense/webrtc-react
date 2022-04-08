@@ -36,13 +36,15 @@ type ClientConfig = {
   sendOffer: (payload: SessionDescription) => void
   sendAnswer: (payload: SessionDescription) => void
   sendCandidate: (payload: IceCandidate) => void
+  addTrack?: (track: MediaStreamTrack, ...streams: MediaStream[]) => RTCRtpSender
 }
 
-function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect }: ClientConfig) {
+function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect, addTrack }: ClientConfig) {
   let localPeerId: string
   const peers: { [key: string]: RTCPeerConnection } = {}
   const channels: { [key: string]: RTCDataChannel } = {}
   const onMessage = new Subject<MessageEvent>()
+  const onTrack = new Subject<RTCTrackEvent>()
   const onChannelOpen = new Subject<string>()
   const onChannelClose = new Subject<string>()
   const onPeerConnected = new Subject<string>()
@@ -79,6 +81,7 @@ function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect }: Clien
   async function receiveOffer({ from, sdp }: { from: string, sdp: RTCSessionDescriptionInit }) {
     const conn = getPeerConnection(from)
     await conn.setRemoteDescription(new RTCSessionDescription(sdp))
+    // TODO: add track
     const answer = await conn.createAnswer()
     await conn.setLocalDescription(answer)
     sendAnswer({
@@ -134,6 +137,7 @@ function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect }: Clien
       channels[remotePeerId] = event.channel
       setDataChannelListeners(event.channel, remotePeerId)
     }
+    conn.ontrack = onTrack.next
     conn.oniceconnectionstatechange = (event: Event) => {
       if (conn.iceConnectionState === 'connected') {
         onPeerConnected.next(remotePeerId)
