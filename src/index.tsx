@@ -4,7 +4,7 @@ import './index.css'
 import App from './App'
 import reportWebVitals from './reportWebVitals'
 import io from 'socket.io-client'
-import { WebRTCIOClientProvider } from '.'
+import { WebRTCSocketClientProvider } from '.'
 
 const port = window.location.port || (window.location.protocol === 'https:' ? 443 : 80)
 const socketUrl = `${window.location.protocol}://${window.location.hostname}:${port}`
@@ -12,9 +12,9 @@ const socket = io(socketUrl)
 
 ReactDOM.render(
   <React.StrictMode>
-    <WebRTCIOClientProvider socket={socket}>
+    <WebRTCSocketClientProvider socket={socket}>
       <App />
-    </WebRTCIOClientProvider>
+    </WebRTCSocketClientProvider>
   </React.StrictMode>,
   document.getElementById('root')
 )

@@ -3,10 +3,10 @@ import { Socket } from 'socket.io-client'
 import { createWebRTCClient } from '.'
 import { Observable } from 'rxjs'
 
-const WebRTCClientContext = React.createContext<ReturnType<typeof createWebRTCClient> | null>(null)
+const WebRTCSocketClientContext = React.createContext<ReturnType<typeof createWebRTCClient>>(undefined as unknown as ReturnType<typeof createWebRTCClient>)
 
-export function useWebRTC(){
-  return useContext(WebRTCClientContext)
+export function useWebRTC() {
+  return useContext(WebRTCSocketClientContext)
 }
 
 function WebRTCIOClientProvider({ children, socket }: React.PropsWithChildren<{ socket: Socket }>) {
@@ -29,9 +29,9 @@ function WebRTCIOClientProvider({ children, socket }: React.PropsWithChildren<{ 
     })
   }, [socket, webRTCClient])
 
-  return <WebRTCClientContext.Provider value={webRTCClient}>
+  return <WebRTCSocketClientContext.Provider value={webRTCClient}>
     {children}
-  </WebRTCClientContext.Provider>
+  </WebRTCSocketClientContext.Provider>
 }
 
 export default WebRTCIOClientProvider
