@@ -1,6 +1,4 @@
-type MessageEventCallback = (event: MessageEvent) => void
-type ChannelEventCallback = (remotePeerId: string) => void
-type ConnectionEventCallback = (remotePeerId: string) => void
+import { Subject } from 'rxjs'
 
 type SessionDescription = {
   sdp: RTCSessionDescription | null,
@@ -38,17 +36,17 @@ type ClientConfig = {
   sendOffer: (payload: SessionDescription) => void
   sendAnswer: (payload: SessionDescription) => void
   sendCandidate: (payload: IceCandidate) => void
-  onMessage: MessageEventCallback
-  onChannelOpen?: ChannelEventCallback
-  onChannelClose?: ChannelEventCallback
-  onPeerConnected?: ConnectionEventCallback
-  onPeerDisconnected?: ConnectionEventCallback
 }
 
-function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect, onPeerConnected, onPeerDisconnected, onMessage, onChannelOpen, onChannelClose }: ClientConfig) {
+function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect }: ClientConfig) {
   let localPeerId: string
   const peers: { [key: string]: RTCPeerConnection } = {}
   const channels: { [key: string]: RTCDataChannel } = {}
+  const onMessage = new Subject<MessageEvent>()
+  const onChannelOpen = new Subject<string>()
+  const onChannelClose = new Subject<string>()
+  const onPeerConnected = new Subject<string>()
+  const onPeerDisconnected = new Subject<string>()
 
   const connect = async (getLocalPeerId: () => string | Promise<string>) => {
     localPeerId = await getLocalPeerId()
@@ -106,16 +104,14 @@ function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect, onPeerC
     if (channel.readyState !== 'closed') {
       channels[remotePeerId] = channel
     }
-    channel.onmessage = onMessage
-    channel.onopen = () => {
-      onChannelOpen && onChannelOpen(remotePeerId)
-    }
+    channel.onmessage = onMessage.next
+    channel.onopen = () => onChannelOpen.next(remotePeerId)
     channel.onclose = () => {
       if (peers[remotePeerId]) {
         peers[remotePeerId].close()
         delete peers[remotePeerId]
       }
-      onChannelClose && onChannelClose(remotePeerId)
+      onChannelClose.next(remotePeerId)
     }
   }
 
@@ -139,20 +135,28 @@ function createClient({ sendCandidate, sendOffer, sendAnswer, onConnect, onPeerC
       setDataChannelListeners(event.channel, remotePeerId)
     }
     conn.oniceconnectionstatechange = (event: Event) => {
-      if (conn.iceConnectionState === 'connected' && onPeerConnected) {
-        onPeerConnected(remotePeerId)
+      if (conn.iceConnectionState === 'connected') {
+        onPeerConnected.next(remotePeerId)
       }
       if (conn.iceConnectionState === 'disconnected') {
         if (peers[remotePeerId]) {
           delete peers[remotePeerId]
         }
-        onPeerDisconnected && onPeerDisconnected(remotePeerId)
+        onPeerDisconnected.next(remotePeerId)
       }
     }
     return conn
   }
 
-  return { connect, sendMessage }
+  return {
+    connect,
+    sendMessage,
+    onMessage: onMessage.subscribe,
+    onPeerConnected: onPeerConnected.subscribe,
+    onPeerDisconnected: onPeerDisconnected.subscribe,
+    onChannelOpen: onChannelOpen.subscribe,
+    onChannelClose: onChannelClose.subscribe
+  }
 }
 
 export type WebRTCClient = ReturnType<typeof createClient>

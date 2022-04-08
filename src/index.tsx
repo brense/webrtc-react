@@ -27,14 +27,15 @@ const webRTCClient = createWebRTCClient({
   }),
   sendOffer: offer => socket.emit('offer', offer),
   sendAnswer: answer => socket.emit('answer', answer),
-  sendCandidate: candidate => socket.emit('candidate', candidate),
-  onMessage: message => console.log(message)
+  sendCandidate: candidate => socket.emit('candidate', candidate)
 })
 
 socket.on('connect', () => {
   console.log(`Connected to websocket, id: ${socket.id}`)
   webRTCClient.connect(() => socket.id)
 })
+
+webRTCClient.onMessage(message => console.log(message))
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

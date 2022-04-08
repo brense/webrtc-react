@@ -65,9 +65,9 @@
   },
   "dependencies": {
     "express": "^4.17.3",
-    "rxjs": "^7.5.5",
     "socket.io": "^4.4.1",
-    "socket.io-client": "^4.4.1",
-    "yargs": "^17.4.0"
+    "yargs": "^17.4.0",
+    "rxjs": "^7.5.5",
+    "socket.io-client": "^4.4.1"
   }
 }
